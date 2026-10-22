@@ -295,7 +295,7 @@ private fun GlassCard(modifier: Modifier = Modifier, content: @Composable Column
 }
 
 // Tiny adapters keep UI callbacks straightforward.
-private fun GmailServiceFrom(store: SecureStore): GmailService = GmailService(storeContext(store))
+private fun GmailServiceFrom(store: SecureStore): GmailService = GmailService(applicationContextFor(store))
 private fun applicationContextFor(store: SecureStore): android.content.Context {
     // SecureStore is constructed with application context by the activity; use a dedicated context
     // through the application-level registry below.
