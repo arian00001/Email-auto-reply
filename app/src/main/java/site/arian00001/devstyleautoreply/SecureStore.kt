@@ -31,6 +31,11 @@ class SecureStore(context: Context) {
         get() = prefs.getString("reply_text", DEFAULT_REPLY) ?: DEFAULT_REPLY
         set(value) { prefs.edit().putString("reply_text", value).apply() }
 
+
+    var imgbbApiKey: String
+        get() = prefs.getString("imgbb_api_key", "") ?: ""
+        set(value) { prefs.edit().putString("imgbb_api_key", value.trim()).apply() }
+
     fun hasCredentials() = email.isNotBlank() && appPassword.isNotBlank()
 
     companion object {

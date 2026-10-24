@@ -59,6 +59,9 @@ private fun AutoReplyApp(store: SecureStore) {
     var email by remember { mutableStateOf(store.email) }
     var password by remember { mutableStateOf(store.appPassword) }
     var reply by remember { mutableStateOf(store.replyText) }
+    var imgbbKey by remember { mutableStateOf(store.imgbbApiKey) }
+    var imageUrl by remember { mutableStateOf("") }
+    var hostedImageUrl by remember { mutableStateOf("") }
     var enabled by remember { mutableStateOf(store.enabled) }
     var inbox by remember { mutableStateOf<List<InboxItem>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
@@ -216,6 +219,45 @@ private fun AutoReplyApp(store: SecureStore) {
                             ) { Icon(Icons.Default.Link, null); Spacer(Modifier.width(8.dp)); Text("Save & test connection") }
                             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = DeepGreen)
                             Text(status, fontSize = 12.sp, color = Muted)
+                        }
+                    }
+                    item {
+                        GlassCard(Modifier.fillMaxWidth()) {
+                            Text("IMGBB IMAGE HOSTING", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, color = DeepGreen)
+                            Spacer(Modifier.height(8.dp))
+                            Text("Save your ImgBB API key locally, then upload a public image URL to get a hosted image link.", fontSize = 11.sp, color = Muted)
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = imgbbKey, onValueChange = { imgbbKey = it },
+                                label = { Text("ImgBB API key") }, singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Button(onClick = { store.imgbbApiKey = imgbbKey; status = "ImgBB API key saved encrypted on this device." }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = DeepGreen)) {
+                                Icon(Icons.Default.Save, null); Spacer(Modifier.width(8.dp)); Text("Save ImgBB key")
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Public image URL") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                            Spacer(Modifier.height(8.dp))
+                            Button(onClick = {
+                                store.imgbbApiKey = imgbbKey
+                                scope.launch {
+                                    busy = true
+                                    status = try {
+                                        hostedImageUrl = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { ImgBBUploader.uploadImageUrl(imgbbKey, imageUrl) }
+                                        "ImgBB upload successful. Hosted URL is ready to copy."
+                                    } catch (e: Exception) { "ImgBB upload failed: ${e.message ?: "check key and image URL"}" }
+                                    busy = false
+                                }
+                            }, enabled = !busy && imgbbKey.isNotBlank() && imageUrl.isNotBlank(), modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = DeepGreen)) {
+                                Icon(Icons.Default.CloudUpload, null); Spacer(Modifier.width(8.dp)); Text("Upload image URL")
+                            }
+                            if (hostedImageUrl.isNotBlank()) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(hostedImageUrl, fontSize = 12.sp, color = DeepGreen)
+                                TextButton(onClick = { android.content.ClipData.newPlainText("ImgBB URL", hostedImageUrl).also { clip -> (AppContext.context?.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager)?.setPrimaryClip(clip) }; status = "Hosted image URL copied." }) { Text("Copy hosted URL") }
+                            }
                         }
                     }
                     item {

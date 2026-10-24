@@ -1,35 +1,49 @@
-<div align="center">
+# DEV STYLE Auto Reply (Android / Kotlin)
 
-# 3MA1L
-### Gmail + Gemini AI Auto Reply
-**Kotlin · IMAP/SMTP · Gemini API · Foreground service**
+A native Android Studio starter app with Home + Settings, Gmail inbox view, Gmail App Password authentication, customizable auto-reply, and GitHub Actions APK builds.
 
-</div>
+## Important behavior and limits
+- Uses Gmail IMAP (`imap.gmail.com:993`) to read inbox and SMTP SSL (`smtp.gmail.com:465`) to send replies.
+- Background checks use WorkManager's periodic schedule (minimum interval 15 minutes). Android can delay work due to Doze, battery saver, force-stop, no network, or OEM background restrictions. This is **not guaranteed instant 24/7 delivery**.
+- If you need reliable always-on replies, use Gmail's server-side vacation responder or a continuously running backend with OAuth/Gmail API.
+- The app skips messages from the account itself, common no-reply addresses, and mailing-list/bulk messages. It processes up to 25 unread messages per run and marks them read after successful reply (or if intentionally skipped).
+- Do not use this for unsolicited bulk email. Gmail sending limits and anti-abuse policies apply.
+- Credentials are stored using AndroidX EncryptedSharedPreferences, but device compromise/rooting can still increase risk. Never share the APK containing your credentials; credentials are entered on-device only.
+- No credential, API key, or app password is committed to the repository.
 
-## Implemented in source
-- Connects to Gmail over IMAPS (`imap.gmail.com:993`) and sends HTML email over SMTP SSL (`smtp.gmail.com:465`) using a Gmail App Password.
-- Lists inbox messages in pages of 50 with Load More; no fixed 30-message cap.
-- Calls Gemini `generateContent` over HTTPS with the configured API key/model.
-- Optional foreground service polls unread inbox messages on a 30-second target loop and sends a generated HTML reply when auto-reply is enabled.
-- Includes your logo asset and a white/lime UI.
-- GitHub Actions workflow builds a debug APK.
+## Gmail setup
+1. Turn on Google 2-Step Verification.
+2. Create a Google App Password at https://myaccount.google.com/apppasswords. Google may not show this option for some managed/workspace accounts or Advanced Protection accounts.
+3. In the app's Settings, enter the Gmail address and the 16-character App Password, then tap **Save & test connection**.
+4. Customize and save the reply message.
+5. Enable Auto-Reply. It checks on a periodic schedule and may be delayed by Android.
 
-## Setup
-1. Open in Android Studio using JDK 17 and sync Gradle.
-2. Build the debug APK.
-3. Turn on Google 2-Step Verification and create a Gmail App Password if available for your account.
-4. In 3MA1L, enter Gmail address, App Password, Gemini API key, and model (`gemini-2.5-flash` default).
-5. Test with a secondary email account first. Save settings, enable auto-reply, then tap Start monitor.
-6. Inspect the persistent notification for connection errors.
+If login fails, confirm the address and App Password are correct and that IMAP is available for your account. Do not enter your normal Google password.
 
-## Real-world limitations
-- **Not build-verified here:** run GitHub Actions/Android Studio build and fix any environment-specific issue before use.
-- Android battery optimisations and Doze can delay background polling; exact 30-second 24/7 delivery cannot be guaranteed.
-- Some Google accounts block IMAP/App Password. If so, Gmail OAuth 2.0/Gmail API is needed.
-- This sends replies automatically to unread messages when enabled. Use a test account first and be aware it can reply to newsletters or automated senders.
-- Gemini output is sent as HTML returned by the model. Do not use for sensitive messages without human review.
-- Credentials are stored in app preferences in this starter, not encrypted. Do not distribute this build publicly until encrypted storage, rate limits, sender allowlists, duplicate prevention, and HTML sanitisation are added.
-- Never commit credentials or API keys to GitHub.
+## Version 1.0.1 build fixes
 
-## Build with GitHub Actions
-Push to `main` or `master`, or run the `Android Build` workflow manually. The debug APK is uploaded as an artifact.
+- Uses Kotlin 2.0.21 with the matching `org.jetbrains.kotlin.plugin.compose` plugin.
+- Enables `buildFeatures.compose = true`; Compose UI dependencies are declared through the Compose BOM.
+- Keeps only `site.arian00001.devstyleautoreply.MainActivity`; the conflicting legacy `site.arian.threeemail` source is not included.
+- ImgBB uploader and encrypted local API-key setting are included.
+- Version code/name updated to 2 / 1.0.1.
+
+## Build APK using GitHub Actions
+1. Create a **private** GitHub repository and upload all files in this project.
+2. Open **Actions** and enable workflows if GitHub asks.
+3. Run the `Android APK Build` workflow, or push a commit to `main` / `master`.
+4. Download the `dev-style-auto-reply-apk` artifact from the workflow run. The debug APK is suitable for testing.
+5. For a public release, configure signing securely using a release keystore and GitHub Secrets; do not commit keystores or passwords.
+
+## Build locally
+Open the folder in Android Studio (JDK 17), allow Gradle sync, then run `./gradlew assembleDebug`.
+
+
+## Build fix and ImgBB integration
+- Removed the stale `site.arian.threeemail` source tree that conflicted with the active Compose app.
+- Kept the Compose plugin/dependencies enabled for the `site.arian00001.devstyleautoreply` app.
+- Added ImgBB URL-upload support under **Settings → ImgBB Image Hosting**. Enter your ImgBB API key, save it, then paste a publicly reachable image URL and upload. The API key is stored using the app's encrypted preferences.
+- ImgBB API keys are still public client-side credentials in a distributed app and can be extracted; monitor quotas and rotate the key if abused.
+- ImgBB currently hosts a public image URL and returns a hosted link; it does not automatically insert that image into outgoing email templates.
+
+Build with `gradle --no-daemon assembleDebug` on a machine with Android SDK 35 installed. This ZIP has not been verified by a full Android SDK build in this environment.
